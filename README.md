@@ -73,6 +73,93 @@ This repository demonstrates a real-world CI/CD pipeline for automated productio
 
 ---
 
+### Docker compose template
+
+```bash
+version: "3.8"
+services:
+  backend:
+    image: [your_backend_image_name]
+    deploy:
+      resources:
+        limits:
+          memory: [memory_limit]
+          cpus: [cpu_limit]
+    build:
+      context: ./backend
+      dockerfile: [Dockerfile for production]
+    ports:
+      - "[host_port:docker_internal_port]" # Map port
+    # These are added as per the requirements, these are extra environment variables that are separately
+    # inlucuded from env file
+    environment:
+      - NODE_ENV=[your_application_environment] # production, staging, development
+      - NODE_EXTRA=production
+      - BASE_URL=[base_url_of_application]
+    env_file:
+      - ./backend/.env
+    volumes:
+      - backend_data:/app/data #Persistence Volume Claim
+    depends_on:
+      - database
+    restart: always
+    networks:
+      - [networkName]
+
+  frontend:
+    image: [your_frontend_image_name]
+    deploy:
+      resources:
+        limits:
+          memory: [memory_limit]
+          cpus: [cpu_limit]
+    build:
+      context: ./frontend
+      dockerfile: [Dockerfile for production]
+    ports:
+      - [host_port:docker_internal_port]
+    # These are added as per the requirements, these are extra environment variables that are separately
+    # inlucuded from env file
+    environment:
+      - NEXT_ENV=production
+    env_file:
+      - ./frontend/.env
+    depends_on:
+      - backend
+    restart: always
+    networks:
+      - [networkName]
+
+  database:
+    image: [your_database_image_from_docker_hub]
+    deploy:
+      resources:
+        limits:
+          memory: [your_frontend_image_name]
+          cpus: [memory_limit]
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER} # Database user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} # Database Password
+      POSTGRES_DB: ${POSTGRES_DB} # Database name
+    ports:
+      - [host_port:docker_internal_port]
+    volumes:
+      - db-data:/var/lib/postgresql/data # Persistence Volume Claim
+    networks:
+      - [networkName]
+
+# Mount the volumes
+volumes:
+  db-data:
+  backend_data:
+
+# Optional, this makes docker network [networkName] shared between different docker compose services
+networks:
+  networkName:
+     external: true
+```
+
 ### 🧠 Key Skills Demonstrated
 
 - SSH deployment automation
